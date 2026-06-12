@@ -68,18 +68,18 @@ extension AppSettings: Codable {
     init(from decoder: Decoder) throws {
         self.init()
         guard let c = try? decoder.container(keyedBy: CodingKeys.self) else { return }
-        if let v = try? c.decodeIfPresent(String.self, forKey: .currencySymbol), let v { currencySymbol = v }
-        if let v = try? c.decodeIfPresent(Double.self, forKey: .defaultHourlyRate), let v { defaultHourlyRate = v }
-        if let v = try? c.decodeIfPresent(Int.self, forKey: .payoutDay1), let v { payoutDay1 = v }
-        if let v = try? c.decodeIfPresent(Int.self, forKey: .payoutDay2), let v { payoutDay2 = v }
-        if let v = try? c.decodeIfPresent(Double.self, forKey: .goalAmount), let v { goalAmount = v }
-        if let v = try? c.decodeIfPresent(AccentTone.self, forKey: .accent), let v { accent = v }
-        if let v = try? c.decodeIfPresent(Bool.self, forKey: .goalIncludesExtras), let v { goalIncludesExtras = v }
+        if let v = try? c.decodeIfPresent(String.self, forKey: .currencySymbol) { currencySymbol = v }
+        if let v = try? c.decodeIfPresent(Double.self, forKey: .defaultHourlyRate) { defaultHourlyRate = v }
+        if let v = try? c.decodeIfPresent(Int.self, forKey: .payoutDay1) { payoutDay1 = v }
+        if let v = try? c.decodeIfPresent(Int.self, forKey: .payoutDay2) { payoutDay2 = v }
+        if let v = try? c.decodeIfPresent(Double.self, forKey: .goalAmount) { goalAmount = v }
+        if let v = try? c.decodeIfPresent(AccentTone.self, forKey: .accent) { accent = v }
+        if let v = try? c.decodeIfPresent(Bool.self, forKey: .goalIncludesExtras) { goalIncludesExtras = v }
 
         // New appearance key, with migration from the legacy `theme` field.
-        if let v = try? c.decodeIfPresent(Appearance.self, forKey: .appearance), let v {
+        if let v = try? c.decodeIfPresent(Appearance.self, forKey: .appearance) {
             appearance = v
-        } else if let legacy = try? c.decodeIfPresent(String.self, forKey: .theme), let legacy {
+        } else if let legacy = try? c.decodeIfPresent(String.self, forKey: .theme) {
             switch legacy {
             case "light": appearance = .light
             case "dark":  appearance = .dark

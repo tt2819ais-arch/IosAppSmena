@@ -30,7 +30,7 @@ struct AddShiftView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AuroraBackground(accent: store.accent)
+                AppBackground(accent: store.accent)
                 if saved, let s = savedShift {
                     SavedShiftView(shift: s, store: store) { dismiss() }
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -53,6 +53,7 @@ struct AddShiftView: View {
                 }
             }
             .onAppear(perform: prefill)
+            .keyboardDoneToolbar()
         }
     }
 
@@ -122,6 +123,7 @@ struct AddShiftView: View {
             .padding(.horizontal, 18)
             .padding(.vertical, 12)
         }
+        .scrollDismissesKeyboard(.interactively)
     }
 
     private var livePreview: some View {

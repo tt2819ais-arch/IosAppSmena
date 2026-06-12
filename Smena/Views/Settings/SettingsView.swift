@@ -10,23 +10,25 @@ struct SettingsView: View {
 
     var body: some View {
         ZStack {
-            AuroraBackground(accent: store.accent)
+            AppBackground(accent: store.accent)
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 18) {
+                VStack(spacing: 22) {
                     header
+                    appearanceCard
                     goalCard
                     rateCurrencyCard
                     payoutCard
-                    appearanceCard
                     dataCard
                     aboutFooter
                 }
-                .padding(.horizontal, 18)
+                .padding(.horizontal, 20)
                 .padding(.top, 8)
                 .padding(.bottom, 40)
             }
+            .scrollDismissesKeyboard(.interactively)
         }
+        .keyboardDoneToolbar()
         .onAppear {
             goalText = trimmed(store.settings.goalAmount)
             rateText = trimmed(store.settings.defaultHourlyRate)
@@ -51,11 +53,51 @@ struct SettingsView: View {
         .padding(.top, 8)
     }
 
+    // MARK: Appearance
+
+    private var appearanceCard: some View {
+        SettingsCard(title: "Оформление", icon: "paintbrush.fill") {
+            VStack(alignment: .leading, spacing: 16) {
+                Picker("Фон", selection: $store.settings.appearance) {
+                    ForEach(Appearance.allCases, id: \.self) { a in
+                        Label(a.title, systemImage: a.icon).tag(a)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: store.settings.appearance) { _ in Haptics.selection() }
+
+                Text(store.settings.appearance == .aurora
+                     ? "Живой фон мягко реагирует на наклон телефона."
+                     : "Спокойный однотонный фон.")
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundStyle(.secondary)
+
+                Divider()
+
+                Text("Акцент").font(.system(.subheadline, design: .rounded)).foregroundStyle(.secondary)
+                HStack(spacing: 14) {
+                    ForEach(AccentTone.allCases, id: \.self) { tone in
+                        Button {
+                            Haptics.selection(); store.settings.accent = tone
+                        } label: {
+                            Circle()
+                                .fill(tone.gradient)
+                                .frame(width: 32, height: 32)
+                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.9),
+                                                               lineWidth: store.accent == tone ? 3 : 0))
+                        }
+                        .buttonStyle(PressableStyle())
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: Goal
 
     private var goalCard: some View {
         SettingsCard(title: "Денежная цель", icon: "target") {
-            VStack(spacing: 12) {
+            VStack(spacing: 14) {
                 HStack {
                     Text("Сумма цели").font(.system(.body, design: .rounded))
                     Spacer()
@@ -71,11 +113,7 @@ struct SettingsView: View {
                 }
                 Divider()
                 Toggle(isOn: $store.settings.goalIncludesExtras) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Учитывать доходы/расходы").font(.system(.subheadline, design: .rounded))
-                        Text("Засчитывать прочие суммы в прогресс цели")
-                            .font(.system(.caption, design: .rounded)).foregroundStyle(.secondary)
-                    }
+                    Text("Учитывать доходы/расходы").font(.system(.subheadline, design: .rounded))
                 }
                 .tint(store.accent.primary)
             }
@@ -86,7 +124,7 @@ struct SettingsView: View {
 
     private var rateCurrencyCard: some View {
         SettingsCard(title: "Ставка и валюта", icon: "tag.fill") {
-            VStack(spacing: 12) {
+            VStack(spacing: 14) {
                 HStack {
                     Text("Ставка по умолчанию").font(.system(.body, design: .rounded))
                     Spacer()
@@ -101,7 +139,7 @@ struct SettingsView: View {
                     Text("\(store.symbol)/ч").foregroundStyle(.secondary)
                 }
                 Divider()
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 10) {
                     Text("Валюта").font(.system(.body, design: .rounded))
                     HStack(spacing: 8) {
                         ForEach(currencyPresets, id: \.self) { sym in
@@ -110,11 +148,9 @@ struct SettingsView: View {
                             } label: {
                                 Text(sym)
                                     .font(.system(.headline, design: .rounded).weight(.semibold))
-                                    .frame(width: 38, height: 38)
-                                    .background(store.symbol == sym ? store.accent.primary.opacity(0.2) : Color.primary.opacity(0.05),
+                                    .frame(width: 36, height: 36)
+                                    .background(store.symbol == sym ? store.accent.primary.opacity(0.18) : Color.primary.opacity(0.05),
                                                 in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .strokeBorder(store.symbol == sym ? store.accent.primary : .clear, lineWidth: 1.5))
                                     .foregroundStyle(store.symbol == sym ? store.accent.primary : .primary)
                             }
                             .buttonStyle(PressableStyle())
@@ -128,13 +164,14 @@ struct SettingsView: View {
     // MARK: Payout days
 
     private var payoutCard: some View {
-        SettingsCard(title: "График выплат (2 раза в месяц)", icon: "calendar.badge.clock") {
-            VStack(spacing: 12) {
+        SettingsCard(title: "График выплат · 2 раза в месяц", icon: "calendar.badge.clock") {
+            VStack(spacing: 14) {
                 dayPicker("Первая выплата", selection: $store.settings.payoutDay1)
                 Divider()
                 dayPicker("Вторая выплата", selection: $store.settings.payoutDay2)
-                Text("Если в месяце меньше дней, выплата сместится на последний день месяца.")
+                Text("Если в месяце меньше дней, выплата сместится на последний день.")
                     .font(.system(.caption, design: .rounded)).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -148,36 +185,6 @@ struct SettingsView: View {
             }
             .pickerStyle(.menu)
             .tint(store.accent.primary)
-        }
-    }
-
-    // MARK: Appearance
-
-    private var appearanceCard: some View {
-        SettingsCard(title: "Оформление", icon: "paintbrush.fill") {
-            VStack(alignment: .leading, spacing: 14) {
-                Picker("Тема", selection: $store.settings.theme) {
-                    ForEach(AppTheme.allCases, id: \.self) { t in Text(t.title).tag(t) }
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: store.settings.theme) { _ in Haptics.selection() }
-
-                Text("Акцент").font(.system(.subheadline, design: .rounded)).foregroundStyle(.secondary)
-                HStack(spacing: 12) {
-                    ForEach(AccentTone.allCases, id: \.self) { tone in
-                        Button {
-                            Haptics.selection(); store.settings.accent = tone
-                        } label: {
-                            Circle()
-                                .fill(tone.gradient)
-                                .frame(width: 34, height: 34)
-                                .overlay(Circle().strokeBorder(Color.white, lineWidth: store.accent == tone ? 3 : 0))
-                                .shadow(color: tone.primary.opacity(0.5), radius: 4, y: 2)
-                        }
-                        .buttonStyle(PressableStyle())
-                    }
-                }
-            }
         }
     }
 
@@ -200,7 +207,7 @@ struct SettingsView: View {
 
     private var aboutFooter: some View {
         VStack(spacing: 4) {
-            Text("Смена").font(.system(.subheadline, design: .rounded).weight(.bold))
+            Text("Аванс").font(.system(.subheadline, design: .rounded).weight(.bold))
             Text("Учёт смен и зарплаты · v1.0")
                 .font(.system(.caption, design: .rounded)).foregroundStyle(.secondary)
         }

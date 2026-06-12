@@ -10,19 +10,20 @@ struct SmenaApp: App {
             ZStack {
                 RootTabView()
                     .environmentObject(store)
+                    .environment(\.appearance, store.settings.appearance)
                     .tint(store.accent.primary)
 
                 if showLaunch {
-                    LaunchView(accent: store.accent)
+                    LaunchView(accent: store.accent, appearance: store.settings.appearance)
                         .transition(.opacity)
                         .zIndex(1)
                 }
             }
-            .preferredColorScheme(store.settings.theme.colorScheme)
+            .preferredColorScheme(store.settings.appearance.colorScheme)
             .onAppear {
-                // Keep the launch animation on screen ~0.6s, then fade out.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    withAnimation(.easeInOut(duration: 0.4)) { showLaunch = false }
+                // Elegant launch animation runs ~1.0s, then fades out.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation(.easeInOut(duration: 0.45)) { showLaunch = false }
                 }
             }
         }

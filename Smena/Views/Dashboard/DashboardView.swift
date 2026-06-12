@@ -7,18 +7,17 @@ struct DashboardView: View {
 
     var body: some View {
         ZStack {
-            AuroraBackground(accent: store.accent)
+            AppBackground(accent: store.accent)
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 18) {
+                VStack(spacing: 22) {
                     header
                     goalCard
-                    statsGrid
-                    payoutCard
-                    quickActions
+                    statRow
+                    addButton
                     if !store.shiftsSorted.isEmpty { recentShifts }
                 }
-                .padding(.horizontal, 18)
+                .padding(.horizontal, 20)
                 .padding(.top, 8)
                 .padding(.bottom, 40)
             }
@@ -39,19 +38,21 @@ struct DashboardView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Image(systemName: "clock.fill")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 46, height: 46)
-                .background(store.accent.gradient, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .shadow(color: store.accent.primary.opacity(0.5), radius: 10, y: 4)
+            Button { Haptics.light(); showAddEntry = true } label: {
+                Image(systemName: "plusminus")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(store.accent.primary)
+                    .frame(width: 44, height: 44)
+                    .background(store.accent.primary.opacity(0.14),
+                                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .buttonStyle(PressableStyle())
         }
         .padding(.top, 8)
     }
 
     private var greeting: String {
-        let h = Calendar.current.component(.hour, from: Date())
-        switch h {
+        switch Calendar.current.component(.hour, from: Date()) {
         case 5..<12: return "Доброе утро"
         case 12..<17: return "Добрый день"
         case 17..<23: return "Добрый вечер"
@@ -62,10 +63,10 @@ struct DashboardView: View {
     // MARK: - Goal card
 
     private var goalCard: some View {
-        GlassCard {
-            VStack(spacing: 16) {
+        GlassCard(padding: 22) {
+            VStack(spacing: 18) {
                 HStack {
-                    Label("Цель", systemImage: "target")
+                    Text("Цель")
                         .font(.system(.subheadline, design: .rounded).weight(.semibold))
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -73,46 +74,41 @@ struct DashboardView: View {
                         Text("Достигнута 🎉")
                             .font(.system(.caption, design: .rounded).weight(.bold))
                             .foregroundStyle(store.accent.primary)
+                    } else {
+                        Text(Fmt.money(store.settings.goalAmount, symbol: store.symbol))
+                            .font(.system(.caption, design: .rounded).weight(.semibold))
+                            .foregroundStyle(.secondary)
                     }
                 }
 
-                ProgressRing(progress: store.goalProgress, gradient: store.accent.gradient, lineWidth: 18) {
+                ProgressRing(progress: store.goalProgress, gradient: store.accent.gradient, lineWidth: 16) {
                     VStack(spacing: 2) {
                         Text("\(Int((store.goalProgress * 100).rounded()))%")
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
                             .contentTransition(.numericText())
                         Text("выполнено")
                             .font(.system(.caption, design: .rounded))
                             .foregroundStyle(.secondary)
                     }
                 }
-                .frame(width: 190, height: 190)
-                .padding(.vertical, 4)
+                .frame(width: 176, height: 176)
 
                 HStack {
-                    goalStat(title: "Заработано", value: Fmt.money(store.earnedTowardGoal, symbol: store.symbol), tint: store.accent.primary)
-                    Spacer()
-                    Divider().frame(height: 34)
-                    Spacer()
-                    goalStat(title: "Осталось", value: Fmt.money(store.goalRemaining, symbol: store.symbol), tint: .secondary)
-                }
-                HStack {
-                    Spacer()
-                    Text("Цель: \(Fmt.money(store.settings.goalAmount, symbol: store.symbol))")
-                        .font(.system(.caption, design: .rounded))
-                        .foregroundStyle(.secondary)
-                    Spacer()
+                    goalStat("Заработано", Fmt.money(store.earnedTowardGoal, symbol: store.symbol), store.accent.primary)
+                    Divider().frame(height: 30)
+                    goalStat("Осталось", Fmt.money(store.goalRemaining, symbol: store.symbol), nil)
                 }
             }
         }
     }
 
-    private func goalStat(title: String, value: String, tint: Color) -> some View {
+    private func goalStat(_ title: String, _ value: String, _ tint: Color?) -> some View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.system(.headline, design: .rounded).weight(.bold))
-                .foregroundStyle(tint == .secondary ? Color.primary : tint)
+                .foregroundStyle(tint ?? .primary)
                 .contentTransition(.numericText())
+                .lineLimit(1).minimumScaleFactor(0.7)
             Text(title)
                 .font(.system(.caption, design: .rounded))
                 .foregroundStyle(.secondary)
@@ -120,85 +116,48 @@ struct DashboardView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Stats grid
+    // MARK: - Two-up stat row
 
-    private var statsGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
-            StatTile(icon: "wallet.pass.fill", value: Fmt.money(store.balance, symbol: store.symbol),
-                     caption: "Баланс", tint: store.accent.primary)
-            StatTile(icon: "calendar", value: "\(store.shiftsCount) \(Fmt.shiftsWord(store.shiftsCount))",
-                     caption: "Всего смен", tint: store.accent.secondary)
-            StatTile(icon: "clock.fill", value: Fmt.duration(hours: store.totalHours),
-                     caption: "Отработано", tint: store.accent.primary)
-            StatTile(icon: "banknote.fill", value: Fmt.money(store.totalShiftEarnings, symbol: store.symbol),
-                     caption: "За смены", tint: store.accent.secondary)
-        }
-    }
-
-    // MARK: - Payout card
-
-    private var payoutCard: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    Label("Ближайшая выплата", systemImage: "calendar.badge.clock")
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(Fmt.dayMonth(store.nextPayoutDate))
-                            .font(.system(.title2, design: .rounded).weight(.bold))
-                        Text("через \(store.daysUntilPayout) \(Fmt.daysWord(store.daysUntilPayout))")
-                            .font(.system(.caption, design: .rounded))
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(Fmt.money(store.currentPeriodEarnings, symbol: store.symbol))
-                            .font(.system(.title2, design: .rounded).weight(.bold))
-                            .foregroundStyle(store.accent.primary)
-                            .contentTransition(.numericText())
-                        Text("за период · \(store.currentPeriodShiftCount) \(Fmt.shiftsWord(store.currentPeriodShiftCount))")
-                            .font(.system(.caption, design: .rounded))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Quick actions
-
-    private var quickActions: some View {
+    private var statRow: some View {
         HStack(spacing: 14) {
-            PrimaryButton(title: "Добавить смену", systemImage: "plus", gradient: store.accent.gradient) {
-                showAddShift = true
-            }
-            Button {
-                Haptics.light(); showAddEntry = true
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "plusminus")
-                    Text("Доход/расход").fontWeight(.semibold)
+            GlassCard(padding: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Image(systemName: "wallet.pass.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(store.accent.primary)
+                    Text(Fmt.money(store.balance, symbol: store.symbol))
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                        .contentTransition(.numericText())
+                    Text("Баланс").font(.system(.caption, design: .rounded)).foregroundStyle(.secondary)
                 }
-                .font(.system(.subheadline, design: .rounded))
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
             }
-            .buttonStyle(PressableStyle())
+            GlassCard(padding: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(store.accent.secondary)
+                    Text(Fmt.dayMonth(store.nextPayoutDate))
+                        .font(.system(.title3, design: .rounded).weight(.bold))
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                    Text("Выплата · через \(store.daysUntilPayout) \(Fmt.daysWord(store.daysUntilPayout))")
+                        .font(.system(.caption, design: .rounded)).foregroundStyle(.secondary)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                }
+            }
+        }
+    }
+
+    private var addButton: some View {
+        PrimaryButton(title: "Добавить смену", systemImage: "plus", gradient: store.accent.gradient) {
+            showAddShift = true
         }
     }
 
     // MARK: - Recent shifts
 
     private var recentShifts: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Последние смены")
                 .font(.system(.headline, design: .rounded).weight(.bold))
                 .padding(.leading, 4)

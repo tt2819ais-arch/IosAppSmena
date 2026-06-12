@@ -8,7 +8,7 @@ struct PayoutsView: View {
 
     var body: some View {
         ZStack {
-            AuroraBackground(accent: store.accent)
+            AppBackground(accent: store.accent)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 18) {

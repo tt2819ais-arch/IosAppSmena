@@ -16,7 +16,7 @@ struct AddEntryView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AuroraBackground(accent: store.accent)
+                AppBackground(accent: store.accent)
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
                         Picker("Тип", selection: $kind) {
@@ -67,6 +67,7 @@ struct AddEntryView: View {
                     .padding(.horizontal, 18)
                     .padding(.vertical, 12)
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
             .navigationTitle(editing == nil ? "Доход / расход" : "Запись")
             .navigationBarTitleDisplayMode(.inline)
@@ -81,6 +82,7 @@ struct AddEntryView: View {
                 }
             }
             .onAppear(perform: prefill)
+            .keyboardDoneToolbar()
         }
     }
 

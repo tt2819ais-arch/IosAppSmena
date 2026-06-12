@@ -153,7 +153,7 @@ struct AddShiftView: View {
         let current = store.earnedTowardGoal - (editing?.earnings ?? 0)
         let projected = current + previewShift.earnings
         let remaining = max(store.settings.goalAmount - projected, 0)
-        let pct = store.settings.goalAmount > 0 ? min(projected / store.settings.goalAmount, 1) : 0
+        let pct = store.settings.goalAmount > 0 ? max(0, min(projected / store.settings.goalAmount, 1)) : 0
         return GlassCard {
             VStack(alignment: .leading, spacing: 10) {
                 Label("После этой смены", systemImage: "target")
